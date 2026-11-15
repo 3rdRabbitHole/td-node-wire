@@ -5,6 +5,8 @@
 Connect and cut operator links in TouchDesigner by dragging with the right mouse button,
 like Blender's Node Wrangler lazy connect.
 
+![Alt+right-drag connects operators; Ctrl+right-drag cuts the top or bottom link on either side](media/demo.gif)
+
 | Gesture | Action |
 | --- | --- |
 | **Alt + right-drag** from one operator to another | Connect them |

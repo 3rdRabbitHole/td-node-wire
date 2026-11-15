@@ -4,6 +4,8 @@
 
 在 TouchDesigner 裡用右鍵拖曳來接線、切線，類似 Blender Node Wrangler 的 Lazy Connect。
 
+![Alt + 右鍵拖曳接線；Ctrl + 右鍵拖曳切掉輸入或輸出側最上面或最下面的一條線](media/demo.gif)
+
 | 手勢 | 動作 |
 | --- | --- |
 | **Alt + 右鍵拖曳**，從一個節點拖到另一個節點 | 接線 |
