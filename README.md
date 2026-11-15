@@ -13,7 +13,7 @@ like Blender's Node Wrangler lazy connect.
   taken, the first one is replaced
 - Cut: drag left for the input side, right for the output side; up (or nearly horizontal) cuts the
   topmost link, down the bottommost. Output links are ordered by the position of the operator they
-  go to. Drags shorter than 20 px cancel
+  go to. Drags shorter than 10 px cancel
 - Palette components (pixelate, audioAnalysis, ...) work: a component counts as the family of its
   in/out operators
 - Each action is one undo step (Ctrl+Z)
@@ -66,7 +66,7 @@ Then right-click the component and choose *Save Component .tox*.
 - 拖曳時游標旁會顯示將要做的事（`→ level1`、`✂ in 0 ← noise1`）
 - 接線：第一個輸出接到第一個空著、類型相同的輸入；全部接滿時取代第一個
 - 切線：往左 = 輸入側、往右 = 輸出側；往上（或接近水平）切最上面一條，往下切最下面一條。
-  輸出側依目標節點的上下位置排序。拖不到 20 px 取消
+  輸出側依目標節點的上下位置排序。拖不到 10 px 取消
 - 支援 palette 元件（pixelate、audioAnalysis 等），以它裡面 in / out 節點的類型判斷
 - 每個動作都是一次 Ctrl+Z
 - 時間軸暫停時也能用

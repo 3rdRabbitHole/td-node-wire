@@ -24,7 +24,7 @@ LABEL_H = 22
 LABEL_PAD = 16
 LABEL_MAXW = 300
 REDRAW_MS = 40                  # wait for TouchDesigner to redraw a changed label before showing it
-CUT_MIN_DRAG = 20               # cut: shorter drags cancel (px)
+CUT_MIN_DRAG = 10               # cut: shorter drags cancel (px)
 CUT_FLAT_DEG = 20               # cut: drags within this angle of horizontal count as "up" (topmost link)
 
 u32 = ctypes.windll.user32
