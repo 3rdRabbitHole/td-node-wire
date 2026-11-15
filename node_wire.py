@@ -2,7 +2,9 @@
 TD Node Wire - connect and cut operator links by dragging with the right mouse button.
 
   Alt  + right-drag from one operator to another: connect them
-  Ctrl + right-drag from one operator to another: cut every link between them
+  Ctrl + right-drag away from an operator: cut one of its links, picked by direction
+         left = input side, right = output side
+         up (or nearly horizontal) = the topmost link, down = the bottommost link
 
 Works in the Network Editor of the main TouchDesigner window. Windows only:
 it uses a low-level mouse hook (WH_MOUSE_LL) so the gesture never reaches
@@ -22,6 +24,8 @@ LABEL_H = 22
 LABEL_PAD = 16
 LABEL_MAXW = 300
 REDRAW_MS = 40                  # wait for TouchDesigner to redraw a changed label before showing it
+CUT_MIN_DRAG = 20               # cut: shorter drags cancel (px)
+CUT_FLAT_DEG = 20               # cut: drags within this angle of horizontal count as "up" (topmost link)
 
 u32 = ctypes.windll.user32
 k32 = ctypes.windll.kernel32
@@ -153,7 +157,7 @@ def _proc(nCode, wParam, lParam):
 					x, y = _pt(lParam)
 					src = _node_at(x, y)
 					if src is not None:
-						S.drag = {'src': src.path, 'mode': 'connect' if alt else 'cut'}
+						S.drag = {'src': src.path, 'mode': 'connect' if alt else 'cut', 'start': (x, y), 'last': (x, y)}
 						if S.tdhwnd and u32.GetForegroundWindow() != S.tdhwnd:
 							u32.SetForegroundWindow(S.tdhwnd)
 						return 1
@@ -202,29 +206,99 @@ def _target(src_path):
 
 def _on_move(x, y):
 	S = state()
+	S.drag['last'] = (x, y)
+	if S.drag['mode'] == 'cut':
+		link = _cut_pick(S.drag)
+		if link is _TOO_SHORT:
+			hide_label()
+		elif link is None:
+			show_label('✂ (no link)', x, y)
+		else:
+			show_label('✂ ' + _link_label(op(S.drag['src']), link), x, y)
+		return
 	tgt = _target(S.drag['src'])
 	if tgt is None:
 		hide_label()
 		return
-	if S.drag['mode'] == 'cut':
-		n = len(links_between(op(S.drag['src']), tgt))
-		show_label('✂ → {} ({})'.format(tgt.name, n if n else 'no link'), x, y)
-	else:
-		show_label('→ ' + tgt.name, x, y)
+	show_label('→ ' + tgt.name, x, y)
 
 
 def _on_up():
 	S = state()
 	d, S.drag = S.drag, None
 	hide_label()
+	if d['mode'] == 'cut':
+		link = _cut_pick(d)
+		if link is _TOO_SHORT or link is None:
+			return
+		print('[node_wire] ' + cut_link(op(d['src']), link))
+		return
 	tgt = _target(d['src'])
 	if tgt is None:
 		return
-	src = op(d['src'])
-	if d['mode'] == 'cut':
-		print('[node_wire] ' + cut_between(src, tgt)[1])
-	else:
-		print('[node_wire] ' + connect(src, tgt)[1])
+	print('[node_wire] ' + connect(op(d['src']), tgt)[1])
+
+
+# ---------------------------------------------------------------- cut by direction
+
+_TOO_SHORT = object()
+
+
+def _cut_pick(drag):
+	"""The link the current drag would cut, None if that side has no link, _TOO_SHORT if the drag is too short.
+	Left = input side, right = output side. Up or nearly horizontal = topmost link, down = bottommost."""
+	import math
+	src = op(drag['src'])
+	if src is None:
+		return None
+	(sx, sy), (x, y) = drag['start'], drag['last']
+	dx, dy = x - sx, sy - y                         # dy > 0 = up (screen y grows downward)
+	if math.hypot(dx, dy) < CUT_MIN_DRAG:
+		return _TOO_SHORT
+	flat = abs(dy) <= abs(dx) * math.tan(math.radians(CUT_FLAT_DEG))
+	from_top = flat or dy > 0
+	links = input_links(src) if dx < 0 else output_links(src)
+	if not links:
+		return None
+	return links[0] if from_top else links[-1]
+
+
+def input_links(node):
+	"""Connected inputs of node, top to bottom (input 0 is the top connector)."""
+	return [ic for ic in node.inputConnectors if ic.connections]
+
+
+def output_links(node):
+	"""Every link leaving node, top to bottom by the position of the operator it goes to."""
+	links = [ic for oc in node.outputConnectors for ic in oc.connections]
+	return sorted(links, key=lambda ic: (-(ic.owner.nodeY + ic.owner.nodeHeight / 2), ic.index))
+
+
+def _link_label(node, ic):
+	if ic.owner == node:                             # an input of node
+		src = ic.connections[0].owner.name if ic.connections else '?'
+		return 'in {} ← {}'.format(ic.index, src)
+	return '→ {} (in {})'.format(ic.owner.name, ic.index)
+
+
+def cut_link(node, ic):
+	"""Cut one link: an input connector of node, or an input connector downstream of node."""
+	if ic.owner == node:
+		desc = '{} input {} (from {})'.format(node.name, ic.index, ic.connections[0].owner.name if ic.connections else '?')
+		ui.undo.startBlock('Node Wire: cut ' + desc)
+		try:
+			ic.disconnect()
+		finally:
+			ui.undo.endBlock()
+		return 'cut ' + desc
+	# output side: remove only the link that comes from node (an input can only hold one link)
+	desc = '{} -> {} input {}'.format(node.name, ic.owner.name, ic.index)
+	ui.undo.startBlock('Node Wire: cut ' + desc)
+	try:
+		ic.disconnect()
+	finally:
+		ui.undo.endBlock()
+	return 'cut ' + desc
 
 
 # ---------------------------------------------------------------- connect / cut
@@ -260,31 +334,6 @@ def connect(src, dst):
 		finally:
 			ui.undo.endBlock()
 	return False, 'no matching connectors between {} and {}'.format(src.name, dst.name)
-
-
-def links_between(a, b):
-	"""Every link between a and b, in either direction, as the input connectors that receive them."""
-	found = []
-	for src, dst in ((a, b), (b, a)):
-		for oc in src.outputConnectors:
-			for ic in oc.connections:
-				if ic.owner == dst:
-					found.append(ic)
-	return found
-
-
-def cut_between(a, b):
-	"""Cut every link between a and b. Returns (count, message)."""
-	links = links_between(a, b)
-	if not links:
-		return 0, 'no link between {} and {}'.format(a.name, b.name)
-	ui.undo.startBlock('Node Wire: cut {} - {}'.format(a.name, b.name))
-	try:
-		for ic in links:
-			ic.disconnect()
-	finally:
-		ui.undo.endBlock()
-	return len(links), 'cut {} link(s) between {} and {}'.format(len(links), a.name, b.name)
 
 
 # ---------------------------------------------------------------- cursor label

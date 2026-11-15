@@ -6,12 +6,14 @@ like Blender's Node Wrangler lazy connect.
 | Gesture | Action |
 | --- | --- |
 | **Alt + right-drag** from one operator to another | Connect them |
-| **Ctrl + right-drag** from one operator to another | Cut every link between them |
+| **Ctrl + right-drag** away from an operator | Cut one of its links, picked by direction |
 
-- A small label next to the cursor shows the target while you drag (`→ level1`, `✂ → level1 (2)`)
+- A small label next to the cursor shows what will happen while you drag (`→ level1`, `✂ in 0 ← noise1`)
 - Connect: the first output goes to the first free input of the same family; when every input is
   taken, the first one is replaced
-- Cut: removes every link between the two operators, in either direction
+- Cut: drag left for the input side, right for the output side; up (or nearly horizontal) cuts the
+  topmost link, down the bottommost. Output links are ordered by the position of the operator they
+  go to. Drags shorter than 20 px cancel
 - Palette components (pixelate, audioAnalysis, ...) work: a component counts as the family of its
   in/out operators
 - Each action is one undo step (Ctrl+Z)
@@ -59,11 +61,12 @@ Then right-click the component and choose *Save Component .tox*.
 | 手勢 | 動作 |
 | --- | --- |
 | **Alt + 右鍵拖曳**，從一個節點拖到另一個節點 | 接線 |
-| **Ctrl + 右鍵拖曳**，從一個節點拖到另一個節點 | 切斷兩者之間所有的線 |
+| **Ctrl + 右鍵拖曳**，從節點往外拖 | 依方向切掉其中一條線 |
 
-- 拖曳時游標旁會顯示目標（`→ level1`、`✂ → level1 (2)`）
+- 拖曳時游標旁會顯示將要做的事（`→ level1`、`✂ in 0 ← noise1`）
 - 接線：第一個輸出接到第一個空著、類型相同的輸入；全部接滿時取代第一個
-- 切線：切斷兩個節點之間所有的連線，不分方向
+- 切線：往左 = 輸入側、往右 = 輸出側；往上（或接近水平）切最上面一條，往下切最下面一條。
+  輸出側依目標節點的上下位置排序。拖不到 20 px 取消
 - 支援 palette 元件（pixelate、audioAnalysis 等），以它裡面 in / out 節點的類型判斷
 - 每個動作都是一次 Ctrl+Z
 - 時間軸暫停時也能用
