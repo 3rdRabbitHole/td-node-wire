@@ -269,8 +269,20 @@ def input_links(node):
 
 
 def output_links(node):
-	"""Every link leaving node, top to bottom by the position of the operator it goes to."""
-	links = [ic for oc in node.outputConnectors for ic in oc.connections]
+	"""Every link leaving node, as the input connectors that receive it, top to bottom by the
+	position of the operator it goes to.
+
+	The receiving connectors are looked up on the target side. After an input of a multi-input
+	operator (Switch, Merge, ...) is disconnected, TouchDesigner shifts the remaining inputs up,
+	but the connectors listed from the source side keep their old index, so disconnecting one of
+	those can cut a different operator's link."""
+	targets = []
+	for oc in node.outputConnectors:
+		for ic in oc.connections:
+			if ic.owner not in targets:
+				targets.append(ic.owner)
+	links = [ic for t in targets for ic in t.inputConnectors
+			 if ic.connections and ic.connections[0].owner == node]
 	return sorted(links, key=lambda ic: (-(ic.owner.nodeY + ic.owner.nodeHeight / 2), ic.index))
 
 
