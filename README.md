@@ -1,6 +1,6 @@
 # TD Node Wire
 
-**English** | [繁體中文](README.zh-TW.md)
+**English** | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md)
 
 Connect and cut operator links in TouchDesigner by dragging with the right mouse button,
 like Blender's Node Wrangler lazy connect.

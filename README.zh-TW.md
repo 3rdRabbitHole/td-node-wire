@@ -1,6 +1,6 @@
 # TD Node Wire
 
-[English](README.md) | **繁體中文**
+[English](README.md) | **繁體中文** | [日本語](README.ja.md)
 
 在 TouchDesigner 裡用右鍵拖曳來接線、切線，類似 Blender Node Wrangler 的 Lazy Connect。
 
